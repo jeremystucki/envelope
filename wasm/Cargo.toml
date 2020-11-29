@@ -1,0 +1,15 @@
+[package]
+name = "envelope-wasm"
+description = "Generate envelopes with proper address placement"
+version = "0.1.0"
+authors = ["Jeremy Stucki <dev@jeremystucki.ch>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+
+[dependencies.envelope-core]
+path = "../core"

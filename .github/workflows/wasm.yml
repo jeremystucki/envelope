@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: 'Deploy'
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+      - name: wasm-pack
+        run: (cd wasm && wasm-pack build)
+      - name: npm build
+        run: (cd wasm/public && npm install && npm run-script build)
+      - name: Move index.html
+        run: mv wasm/public/index.html wasm/public/dist
+      - uses: crazy-max/ghaction-github-pages@v1.2.4
+        with:
+          build_dir: wasm/public/dist
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}

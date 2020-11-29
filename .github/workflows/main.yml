@@ -1,0 +1,24 @@
+name: Main
+
+on: [push]
+
+jobs:
+  build:
+    name: 'Build'
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build
+        run: cargo build --all-features
+
+  lints:
+    name: 'Style Checks'
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install components
+        run: rustup component add rustfmt clippy
+      - name: Run clippy
+        run: cargo clippy --all-features -- -Dwarnings
+      - name: Run rustfmt
+        run: cargo fmt --all -- --check
