@@ -13,3 +13,6 @@ wasm-bindgen = "0.2"
 
 [dependencies.envelope-core]
 path = "../core"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
