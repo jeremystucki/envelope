@@ -43,14 +43,25 @@ impl Envelope {
                 "F1" => font_id,
             },
         });
+
+        let sender_text = self.sender.clone().unwrap();
+        let sender = sender_text.lines();
+        let mut content_operations = Vec::new();
+        content_operations.append(&mut vec![
+            Operation::new("BT", vec![]),
+            Operation::new("Tf", vec!["F1".into(), 12.into()]),
+            Operation::new("Td", vec![50.into(), 50.into()]),
+            Operation::new("TL", vec![12.into()]),
+        ]);
+
+        content_operations.push(Operation::new("Tj", vec![Object::string_literal("1")]));
+        content_operations.push(Operation::new("'", vec![Object::string_literal("2")]));
+        content_operations.push(Operation::new("'", vec![Object::string_literal("3")]));
+
+        content_operations.push(Operation::new("ET", vec![]));
+
         let content = Content {
-            operations: vec![
-                Operation::new("BT", vec![]),
-                Operation::new("Tf", vec!["F1".into(), 48.into()]),
-                Operation::new("Td", vec![100.into(), 600.into()]),
-                Operation::new("Tj", vec![Object::string_literal("Hello World!")]),
-                Operation::new("ET", vec![]),
-            ],
+            operations: content_operations,
         };
         let content_id = doc.add_object(Stream::new(dictionary! {}, content.encode().unwrap()));
         let page_id = doc.add_object(dictionary! {
