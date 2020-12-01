@@ -31,45 +31,47 @@ impl Envelope {
     }
 
     pub fn write<W: Write>(&self, destination: &mut W) {
-        let mut doc = Document::with_version("1.5");
-        let pages_id = doc.new_object_id();
-        let font_id = doc.add_object(dictionary! {
+        let mut document = Document::with_version("1.5");
+
+        let pages_id = document.new_object_id();
+        let font_id = document.add_object(dictionary! {
             "Type" => "Font",
             "Subtype" => "Type1",
             "BaseFont" => "Courier",
         });
-        let resources_id = doc.add_object(dictionary! {
+        let resources_id = document.add_object(dictionary! {
             "Font" => dictionary! {
                 "F1" => font_id,
             },
         });
 
-        let sender_text = self.sender.clone().unwrap();
-        let sender = sender_text.lines();
-        let mut content_operations = Vec::new();
-        content_operations.append(&mut vec![
-            Operation::new("BT", vec![]),
-            Operation::new("Tf", vec!["F1".into(), 12.into()]),
-            Operation::new("Td", vec![50.into(), 50.into()]),
-            Operation::new("TL", vec![12.into()]),
-        ]);
+        let (width, height) = get_dimensions(&self.paper_size);
 
-        content_operations.push(Operation::new("Tj", vec![Object::string_literal("1")]));
-        content_operations.push(Operation::new("'", vec![Object::string_literal("2")]));
-        content_operations.push(Operation::new("'", vec![Object::string_literal("3")]));
+        let mut operations = self
+            .sender
+            .as_ref()
+            .map(|text| Self::generate_text_operations(text, 5, (10, height - 10)))
+            .unwrap_or_default();
 
-        content_operations.push(Operation::new("ET", vec![]));
+        operations.append(
+            &mut self
+                .recipient
+                .as_ref()
+                .map(|text| Self::generate_text_operations(text, 7, (width / 2, height / 2)))
+                .unwrap_or_default(),
+        );
 
-        let content = Content {
-            operations: content_operations,
-        };
-        let content_id = doc.add_object(Stream::new(dictionary! {}, content.encode().unwrap()));
-        let page_id = doc.add_object(dictionary! {
+        let content = Content { operations };
+
+        let content_id =
+            document.add_object(Stream::new(dictionary! {}, content.encode().unwrap()));
+
+        let page_id = document.add_object(dictionary! {
             "Type" => "Page",
             "Parent" => pages_id,
             "Contents" => content_id,
         });
-        let (width, height) = get_dimensions(&self.paper_size);
+
         let pages = dictionary! {
             "Type" => "Pages",
             "Kids" => vec![page_id.into()],
@@ -77,13 +79,42 @@ impl Envelope {
             "Resources" => resources_id,
             "MediaBox" => vec![0.into(), 0.into(), width.into(), height.into()],
         };
-        doc.objects.insert(pages_id, Object::Dictionary(pages));
-        let catalog_id = doc.add_object(dictionary! {
+
+        document.objects.insert(pages_id, Object::Dictionary(pages));
+
+        let catalog_id = document.add_object(dictionary! {
             "Type" => "Catalog",
             "Pages" => pages_id,
         });
-        doc.trailer.set("Root", catalog_id);
-        doc.save_to(destination).unwrap()
+
+        document.trailer.set("Root", catalog_id);
+        document.save_to(destination).unwrap()
+    }
+
+    fn generate_text_operations(
+        text: &str,
+        text_size: u8,
+        (offset_left, offset_bottom): (u32, u32),
+    ) -> Vec<Operation> {
+        let lines = text.lines();
+        let mut operations = Vec::new();
+
+        operations.append(&mut vec![
+            Operation::new("BT", vec![]),
+            Operation::new("Tf", vec!["F1".into(), text_size.into()]),
+            Operation::new("Td", vec![offset_left.into(), offset_bottom.into()]),
+            Operation::new("TL", vec![text_size.into()]),
+        ]);
+
+        operations.append(
+            &mut lines
+                .map(|line| Operation::new("'", vec![Object::string_literal(line)]))
+                .collect(),
+        );
+
+        operations.push(Operation::new("ET", vec![]));
+
+        operations
     }
 }
 
