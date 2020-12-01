@@ -4,7 +4,7 @@
     "build": "webpack"
   },
   "dependencies": {
-    "pixel-perfect": "file:../pkg"
+    "envelope": "file:../pkg"
   },
   "devDependencies": {
     "webpack": "^4.42.1",
